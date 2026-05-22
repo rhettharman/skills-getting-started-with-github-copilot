@@ -112,8 +112,30 @@ def signup_for_activity(activity_name: str, email: str):
     if isinstance(max_participants, int) and len(activity.get("participants", [])) >= max_participants:
         raise HTTPException(status_code=400, detail="Activity is full")
 
-   # Validate student is not already signed up for another activity at the same time
-    
     # Add student
     activity.setdefault("participants", []).append(normalized_email)
     return {"message": f"Signed up {normalized_email} for {activity_name}"}
+
+
+@app.delete("/activities/{activity_name}/participant")
+def remove_participant(activity_name: str, email: str):
+    """Remove a participant from an activity"""
+    # Validate activity exists
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    # Get the specific activity
+    activity = activities[activity_name]
+    participants = activity.get("participants", [])
+
+    # Normalize the email for consistent comparison
+    normalized_email = email.strip().lower()
+
+    # Find and remove the participant (case-insensitive)
+    for i, p in enumerate(participants):
+        if p.strip().lower() == normalized_email:
+            participants.pop(i)
+            return {"message": f"Removed {normalized_email} from {activity_name}"}
+
+    # Participant not found
+    raise HTTPException(status_code=404, detail="Participant not found in this activity")
